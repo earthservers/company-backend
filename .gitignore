@@ -1,0 +1,19 @@
+# Rust build artifacts
+target/
+
+# Node deps (if any subprojects use them)
+node_modules/
+
+# Secrets — should NEVER be in git
+.env
+.env.local
+Revolt.toml
+Revolt.overrides.toml
+keys/
+
+# Logs / OS / editor
+*.log
+.DS_Store
+*.swp
+.idea/
+.vscode/

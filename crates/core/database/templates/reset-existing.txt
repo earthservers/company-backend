@@ -1,0 +1,14 @@
+You tried to create a new account with or try
+to re-verify this email but there is already
+an existing verified account under this email.
+
+If you wish, you can now proceed to reset the
+password on it, click below to continue.
+
+Please navigate to: {{url}}
+
+This email is intended for {{email}}
+Sent by Company
+Built in Canada
+
+Company Team

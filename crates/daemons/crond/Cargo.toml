@@ -1,0 +1,23 @@
+[package]
+name = "company-crond"
+version = "0.10.3"
+license = "AGPL-3.0-or-later"
+authors = ["Paul Makles <me@insrt.uk>"]
+edition = "2021"
+description = "Revolt Daemon Service: Timed data clean up tasks"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Utility
+log = "0.4"
+
+# Async
+tokio = { version = "1" }
+
+# Core
+company-database = { version = "0.10.3", path = "../../core/database" }
+company-result = { version = "0.10.3", path = "../../core/result" }
+company-config = { version = "0.10.3", path = "../../core/config" }
+company-files = { version = "0.10.3", path = "../../core/files" }

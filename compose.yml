@@ -1,0 +1,52 @@
+services:
+  # Redis
+  redis:
+    image: docker.io/eqalpha/keydb
+    ports:
+      - "6379:6379"
+
+  # MongoDB
+  database:
+    image: docker.io/library/mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./.data/db:/data/db
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  # Rabbit
+  rabbit:
+    image: docker.io/library/rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbituser
+      RABBITMQ_DEFAULT_PASS: rabbitpass
+    volumes:
+      - ./.data/rabbit:/var/lib/rabbitmq
+      #- ./rabbit_plugins:/opt/rabbitmq/plugins/
+      #- ./rabbit_enabled_plugins:/etc/rabbitmq/enabled_plugins
+      # uncomment this if you need to enable other plugins
+    ports:
+      - "5672:5672"
+      - "15672:15672" # management UI, for development
+
+  # Mock SMTP server
+  maildev:
+    image: docker.io/maildev/maildev
+    ports:
+      - "14025:1025"
+      - "14080:1080"
+    environment:
+      MAILDEV_SMTP_PORT: 1025
+      MAILDEV_WEB_PORT: 1080
+      MAILDEV_INCOMING_USER: smtp
+      MAILDEV_INCOMING_PASS: smtp
+
+  livekit:
+    image: docker.io/livekit/livekit-server:v1.9.9
+    command: --config /etc/livekit.yml
+    network_mode: "host"
+    volumes:
+      - ./livekit.yml:/etc/livekit.yml
