@@ -57,8 +57,9 @@ services:
     image: company-server:latest
     build:
       context: .
+      network: host
       args:
-        TARGETARCH: amd64    # add this line
+        TARGETARCH: amd64
     restart: unless-stopped
     entrypoint: ["/home/rust/src/target/release/company-delta"]
     volumes:
@@ -100,6 +101,7 @@ services:
     image: company-server:latest
     build:
       context: .
+      network: host
       args:
         TARGETARCH: amd64
     restart: unless-stopped
@@ -117,7 +119,9 @@ services:
       - "127.0.0.1:14703:14703"
 
   signer:
-    build: ./signer
+    build:
+      context: ./signer
+      network: host
     restart: unless-stopped
     environment:
       ADMIN_API_KEY: ${SIGNER_ADMIN_API_KEY}       # was "redacted" literal; now from .env
@@ -137,7 +141,9 @@ services:
 
 
   beacon-signal:
-    build: ./company-beacon-signal
+    build:
+      context: ./company-beacon-signal
+      network: host
     restart: unless-stopped
     environment:
       - SIGNAL_PORT=8080
