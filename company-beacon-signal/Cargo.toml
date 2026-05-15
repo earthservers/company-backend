@@ -1,0 +1,25 @@
+[package]
+name = "company-beacon-signal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.8", features = ["ws"] }
+http = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.24"
+futures = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+base64 = "0.22"
+hmac = "0.12"
+sha2 = "0.10"
+constant_time_eq = "0.3"
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+rand = "0.8"
+tower = { version = "0.5", features = ["util"] }

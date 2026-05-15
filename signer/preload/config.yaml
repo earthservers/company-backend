@@ -1,0 +1,8 @@
+# Example preload config for the signer
+# This file will be mounted read-only into the container at /app/preload/config.yaml
+admin_api_key: changeme
+signer:
+  default_key_type: rsa-2048
+  allowed_actions:
+    - sign
+    - claim
