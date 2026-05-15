@@ -7,8 +7,11 @@ node_modules/
 # Secrets — should NEVER be in git
 .env
 .env.local
-Revolt.toml
-Revolt.overrides.toml
+# Runtime Revolt.toml at repo root (the one with real secrets you place on the server).
+# NOTE: the default config at crates/core/config/Revolt.toml is needed at COMPILE TIME
+# (include_str! macro in crates/core/config/src/lib.rs), so we exclude only the top-level one.
+/Revolt.toml
+/Revolt.overrides.toml
 keys/
 
 # Logs / OS / editor
