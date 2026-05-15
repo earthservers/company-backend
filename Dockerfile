@@ -7,6 +7,12 @@ ARG TARGETARCH=amd64
 
 # Install build requirements
 RUN dpkg --add-architecture "${TARGETARCH}"
+# Switch from deb.debian.org (Fastly) to ftp.de.debian.org — Fastly returns
+# intermittent 503s when traffic comes from this region; Germany mirror is
+# both geographically closer to Contabo and on a different network.
+RUN sed -i 's|http://deb.debian.org|http://ftp.de.debian.org|g' \
+    /etc/apt/sources.list.d/debian.sources \
+    /etc/apt/sources.list 2>/dev/null; true
 RUN apt-get update && \
     apt-get install -y \
     make \
