@@ -78,6 +78,10 @@ services:
 
   voice-ingress:
     image: company-server:latest
+    build:
+      context: .
+      args:
+        TARGETARCH: amd64
     restart: unless-stopped
     entrypoint: ["/home/rust/src/target/release/company-voice-ingress"]
     volumes:
@@ -87,13 +91,17 @@ services:
     ports:
       - "8500:8500"
     depends_on:
-      - delta                                      # ADDED — ensures the shared image is built before this starts
+      - delta                                      # ensures the shared image is built before this starts
       - rabbitmq
       - redis
       - livekit
 
   bonfire:
     image: company-server:latest
+    build:
+      context: .
+      args:
+        TARGETARCH: amd64
     restart: unless-stopped
     entrypoint: ["/home/rust/src/target/release/company-bonfire"]
     volumes:
@@ -101,7 +109,7 @@ services:
     networks:
       - internal
     depends_on:
-      - delta                                      # ADDED — same reason
+      - delta                                      # same reason
       - mongo
       - redis
       - rabbitmq
