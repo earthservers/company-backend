@@ -1,52 +1,169 @@
 services:
-  # Redis
+  # --- Infrastructure ---
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - internal
+
   redis:
-    image: docker.io/eqalpha/keydb
-    ports:
-      - "6379:6379"
+    image: eqalpha/keydb:latest
+    restart: unless-stopped
+    networks:
+      - internal
 
-  # MongoDB
-  database:
-    image: docker.io/library/mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - ./.data/db:/data/db
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-
-  # Rabbit
-  rabbit:
-    image: docker.io/library/rabbitmq:4-management
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: rabbituser
-      RABBITMQ_DEFAULT_PASS: rabbitpass
-    volumes:
-      - ./.data/rabbit:/var/lib/rabbitmq
-      #- ./rabbit_plugins:/opt/rabbitmq/plugins/
-      #- ./rabbit_enabled_plugins:/etc/rabbitmq/enabled_plugins
-      # uncomment this if you need to enable other plugins
-    ports:
-      - "5672:5672"
-      - "15672:15672" # management UI, for development
-
-  # Mock SMTP server
-  maildev:
-    image: docker.io/maildev/maildev
-    ports:
-      - "14025:1025"
-      - "14080:1080"
-    environment:
-      MAILDEV_SMTP_PORT: 1025
-      MAILDEV_WEB_PORT: 1080
-      MAILDEV_INCOMING_USER: smtp
-      MAILDEV_INCOMING_PASS: smtp
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}      # was plaintext "rabbituser"; now from .env
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}      # was plaintext "rabbitpass"; now from .env
+    networks:
+      - internal
 
   livekit:
-    image: docker.io/livekit/livekit-server:v1.9.9
-    command: --config /etc/livekit.yml
-    network_mode: "host"
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
     volumes:
-      - ./livekit.yml:/etc/livekit.yml
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    command: --config /etc/livekit.yaml
+    networks:
+      - internal
+    ports:
+      - "127.0.0.1:7880:7880"
+      - "7881:7881/tcp"
+      - "50000-50020:50000-50020/udp"
+      - "3478:3478/udp"
+      - "5349:5349/tcp"
+    # NOTE: This mounts the HOST's /etc/letsencrypt — it must exist on Contabo
+    # (even if empty initially). LiveKit will fail to start until you've run
+    # certbot for the local.company.earthservers.net subdomain. If voice/video
+    # isn't critical for cutover, comment this whole service out and re-enable later.
+
+  # --- Application Services ---
+  # `delta` is the first service using the company-server image, so it carries
+  # the `build:` directive. The other services (voice-ingress, bonfire) reuse
+  # the resulting image. `docker compose up --build` rebuilds it on every push.
+  delta:
+    image: company-server:latest
+    build:
+      context: .
+      args:
+        TARGETARCH: amd64    # add this line
+    restart: unless-stopped
+    entrypoint: ["/home/rust/src/target/release/company-delta"]
+    volumes:
+      - ./Revolt.toml:/home/rust/src/Revolt.toml:ro
+      - ./keys:/opt/company/keys:ro                # CHANGED — was /opt/company/keys on host; now relative to compose dir
+    networks:
+      - internal
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+    ports:
+      - "127.0.0.1:14702:14702"
+
+  voice-ingress:
+    image: company-server:latest
+    restart: unless-stopped
+    entrypoint: ["/home/rust/src/target/release/company-voice-ingress"]
+    volumes:
+      - ./Revolt.toml:/home/rust/src/Revolt.toml:ro
+    networks:
+      - internal
+    ports:
+      - "8500:8500"
+    depends_on:
+      - delta                                      # ADDED — ensures the shared image is built before this starts
+      - rabbitmq
+      - redis
+      - livekit
+
+  voice-ingress:
+    image: company-server:latest
+    restart: unless-stopped
+    entrypoint: ["/home/rust/src/target/release/company-voice-ingress"]
+    volumes:
+      - ./Revolt.toml:/home/rust/src/Revolt.toml:ro
+    networks:
+      - internal
+    ports:
+      - "8500:8500"
+    depends_on:
+      - delta                                      # ADDED — ensures the shared image is built before this starts
+      - rabbitmq
+      - redis
+      - livekit
+
+  bonfire:
+    image: company-server:latest
+    restart: unless-stopped
+    entrypoint: ["/home/rust/src/target/release/company-bonfire"]
+    volumes:
+      - ./Revolt.toml:/home/rust/src/Revolt.toml:ro
+    networks:
+      - internal
+    depends_on:
+      - delta                                      # ADDED — same reason
+      - mongo
+      - redis
+      - rabbitmq
+    ports:
+      - "127.0.0.1:14703:14703"
+
+  signer:
+    build: ./signer
+    restart: unless-stopped
+    environment:
+      ADMIN_API_KEY: ${SIGNER_ADMIN_API_KEY}       # was "redacted" literal; now from .env
+      SIGNER_PORT: "8080"
+      REVOLT_API_URL: "http://delta:14702"
+      SMTP_HOST: "smtp.resend.com"
+      SMTP_PORT: "465"
+      SMTP_FROM: "Company <noreply@earthservers.net>"
+      SMTP_USERNAME: "resend"
+      SMTP_PASSWORD: ${SMTP_PASSWORD}              # was "redacted" literal; now from .env
+    volumes:
+      - signer-data:/app/live
+    networks:
+      - internal
+    ports:
+      - "127.0.0.1:8080:8080"
+
+
+  beacon-signal:
+    build: ./company-beacon-signal
+    restart: unless-stopped
+    environment:
+      - SIGNAL_PORT=8080
+      - SIGNAL_SECRET=${COMPANY_SIGNAL_SECRET}     # unchanged — already from .env
+    networks:
+      - internal
+    ports:
+      - "127.0.0.1:8090:8080"
+
+  # Caddy service removed — Apache on the host handles reverse-proxy + TLS now.
+  # (You had it commented out anyway. Removed for clarity.)
+
+volumes:
+  mongo-data:
+  signer-data:
+  # minio-data removed — no service referenced it
+  # caddy-data, caddy-config removed — no caddy service anymore
+
+networks:
+  internal:
+    driver: bridge
