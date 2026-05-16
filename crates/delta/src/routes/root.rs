@@ -3,6 +3,8 @@ use company_result::Result;
 use rocket::serde::json::Json;
 use serde::Serialize;
 
+use crate::util::epoch_bump::EPOCH_BUMP_AUDIENCE;
+
 /// # hCaptcha Configuration
 #[derive(Serialize, JsonSchema, Debug)]
 pub struct CaptchaFeature {
@@ -39,6 +41,21 @@ pub struct VoiceFeature {
     pub nodes: Vec<VoiceNode>,
 }
 
+/// # Epoch Bump Signing Configuration
+#[derive(Serialize, JsonSchema, Debug)]
+pub struct EpochSigningFeature {
+    /// Whether server-signed epoch bumps are enabled. When true,
+    /// clients should reject any `_e2e_epoch_bump` that doesn't carry
+    /// a valid token signed by the key below.
+    pub enabled: bool,
+    /// RS256 public key in PEM (SPKI) format. Empty when disabled.
+    /// Clients import this once at startup and use it to verify the
+    /// signature on every received epoch-bump token.
+    pub public_key_pem: String,
+    /// Expected `aud` claim on epoch bump tokens.
+    pub audience: String,
+}
+
 /// # Feature Configuration
 #[derive(Serialize, JsonSchema, Debug)]
 pub struct RevoltFeatures {
@@ -56,6 +73,9 @@ pub struct RevoltFeatures {
     pub january: Feature,
     /// Voice server configuration
     pub livekit: VoiceFeature,
+    /// Server-signed epoch bump configuration. Clients use this to
+    /// verify purge-triggered epoch bumps cryptographically.
+    pub epoch_signing: EpochSigningFeature,
 }
 
 /// # Build Information
@@ -118,6 +138,30 @@ pub async fn root() -> Result<Json<RevoltConfig>> {
             january: Feature {
                 enabled: false,
                 url: String::new(),
+            },
+            epoch_signing: {
+                // Best-effort: read the public key file once at startup
+                // and inline its contents. Empty string + enabled:false
+                // if the file can't be read; clients then fall back to
+                // refusing all epoch bumps (safe default).
+                let path = &config.external_auth.public_key_path;
+                match std::fs::read_to_string(path) {
+                    Ok(pem) => EpochSigningFeature {
+                        enabled: true,
+                        public_key_pem: pem,
+                        audience: EPOCH_BUMP_AUDIENCE.to_string(),
+                    },
+                    Err(err) => {
+                        log::warn!(
+                            "root: failed to read epoch signing public key at {path}: {err}"
+                        );
+                        EpochSigningFeature {
+                            enabled: false,
+                            public_key_pem: String::new(),
+                            audience: EPOCH_BUMP_AUDIENCE.to_string(),
+                        }
+                    }
+                }
             },
             livekit: VoiceFeature {
                 enabled: !config.hosts.livekit.is_empty(),

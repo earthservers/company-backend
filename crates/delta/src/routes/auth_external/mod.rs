@@ -19,6 +19,7 @@ use rocket::Route;
 
 mod events_users;
 mod external_token;
+mod pairing_attest;
 mod service_token;
 
 pub fn routes() -> Vec<Route> {
@@ -26,5 +27,6 @@ pub fn routes() -> Vec<Route> {
         external_token::external_token,
         service_token::service_token,
         events_users::user_events,
+        pairing_attest::pairing_attest,
     ]
 }
