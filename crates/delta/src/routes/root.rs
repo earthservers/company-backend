@@ -136,8 +136,13 @@ pub async fn root() -> Result<Json<RevoltConfig>> {
                 url: format!("{}/assets", config.hosts.api),
             },
             january: Feature {
-                enabled: false,
-                url: String::new(),
+                // Embed proxying runs server-side via the message
+                // embed task. `enabled: true` once a january URL is
+                // configured so clients know rich embeds will appear
+                // for posted links; the URL itself is informational
+                // (clients never call January directly).
+                enabled: !config.hosts.january.is_empty(),
+                url: config.hosts.january.clone(),
             },
             epoch_signing: {
                 // Best-effort: read the public key file once at startup

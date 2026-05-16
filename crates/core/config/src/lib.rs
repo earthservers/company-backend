@@ -132,6 +132,13 @@ pub struct Hosts {
     pub app: String,
     pub api: String,
     pub events: String,
+    /// URL of the January embed-proxy service. Used by the message
+    /// embed task to resolve external links (YouTube, Twitter, etc.)
+    /// into structured Embed objects. Defaults to empty — when empty,
+    /// embed processing silently no-ops, leaving messages without
+    /// rich embeds.
+    #[serde(default)]
+    pub january: String,
     pub livekit: HashMap<String, String>,
 }
 
