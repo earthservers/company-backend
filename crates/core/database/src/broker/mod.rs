@@ -97,6 +97,90 @@ fn now_unix() -> i64 {
         .unwrap_or(0)
 }
 
+// ── Channel epoch cache (cryptographic-erasure enforcement) ─────
+//
+// The authoritative channel-epoch counter lives in mongo, atomically
+// `$inc`d by `DELETE /channels/<id>/messages/purge/<before>`. We
+// mirror the value into redis so the broker drain path can filter
+// out pre-purge envelopes without round-tripping to mongo per
+// message. Cache misses default to 0 — equivalent to "no purge has
+// ever happened in this channel", which is the safe default
+// (nothing gets filtered, no false rejection of fresh traffic).
+
+fn channel_epoch_key(channel_id: &str) -> String {
+    format!("broker:channel_epoch:{channel_id}")
+}
+
+/// Read the current epoch for a channel from the redis cache.
+///
+/// Returns 0 when the cache is cold or the channel has never been
+/// purged. The mongo `channel_epochs` collection is the source of
+/// truth; this is just a fast lookup path used by the broker drain
+/// filter. The `purge_before` route is responsible for writing
+/// updates here.
+pub async fn get_channel_epoch_cached(channel_id: &str) -> Result<i64> {
+    let key = channel_epoch_key(channel_id);
+    let mut conn = get_connection().await?;
+    let val: Option<i64> = conn.get(&key).await.to_internal_error()?;
+    Ok(val.unwrap_or(0))
+}
+
+/// Mirror a channel's new epoch into the redis cache. Called by the
+/// purge endpoint after a successful mongo `$inc`. Safe to call
+/// repeatedly — set is idempotent for the same value.
+pub async fn set_channel_epoch_cached(channel_id: &str, epoch: i64) -> Result<()> {
+    let key = channel_epoch_key(channel_id);
+    let mut conn = get_connection().await?;
+    conn.set::<_, _, ()>(&key, epoch)
+        .await
+        .to_internal_error()?;
+    Ok(())
+}
+
+/// Extract `(channel_id, envelope_epoch)` from a serialized
+/// `EventV1` if it's a Message-type event whose content is an E2E
+/// envelope carrying an `e:` field. Returns None for everything
+/// else (plaintext messages, non-Message events, unparseable JSON)
+/// — those pass through the filter unchanged because we can't make
+/// a defensible "stale" judgment about them.
+///
+/// The parse is done as untyped `serde_json::Value` rather than
+/// `EventV1` itself to keep the broker decoupled from event-schema
+/// drift: adding a new EventV1 variant doesn't break the filter,
+/// and adding a new envelope shape just means the parse falls
+/// through to None (no filtering applied).
+fn extract_envelope_epoch(event_json: &str) -> Option<(String, i64)> {
+    let value: serde_json::Value = serde_json::from_str(event_json).ok()?;
+    let obj = value.as_object()?;
+    let event_type = obj.get("type")?.as_str()?;
+
+    let (channel, content) = match event_type {
+        // `EventV1::Message(Message)` — newtype variant flattens the
+        // inner struct so `channel` and `content` are top-level fields
+        // alongside `type` in the JSON.
+        "Message" => (
+            obj.get("channel")?.as_str()?.to_string(),
+            obj.get("content")?.as_str()?,
+        ),
+        // `MessageUpdate` carries new content in `data.content`.
+        "MessageUpdate" => {
+            let ch = obj.get("channel")?.as_str()?.to_string();
+            let data = obj.get("data")?.as_object()?;
+            let c = data.get("content")?.as_str()?;
+            (ch, c)
+        }
+        _ => return None,
+    };
+
+    if !content.starts_with("{\"_e2e\":1,") {
+        return None;
+    }
+    let env: serde_json::Value = serde_json::from_str(content).ok()?;
+    // Envelopes without an `e` field are pre-protocol (epoch 0).
+    let epoch = env.get("e").and_then(|v| v.as_i64()).unwrap_or(0);
+    Some((channel, epoch))
+}
+
 // ── Device Registry ─────────────────────────────────────────────
 
 /// One entry in the per-user messaging device registry.
@@ -355,6 +439,13 @@ pub async fn queue_offline_message(
 /// Drain all queued offline messages for a single device session.
 /// Returns the messages and deletes that session's queue atomically.
 /// Other sessions of the same user are untouched.
+///
+/// Pre-purge envelopes (envelope.e < current channel epoch) are
+/// filtered out before return — cryptographic-erasure enforcement
+/// at the broker layer. The recipient client would refuse to decrypt
+/// them anyway (epoch_expired), but filtering server-side stops the
+/// "Unable to decrypt" cards that would otherwise reappear in the
+/// recipient's chat after a peer-side purge while they were offline.
 pub async fn drain_offline_queue(user_id: &str, session_id: &str) -> Result<Vec<String>> {
     let key = queue_key(user_id, session_id);
     let mut conn = get_connection().await?;
@@ -367,7 +458,37 @@ pub async fn drain_offline_queue(user_id: &str, session_id: &str) -> Result<Vec<
         conn.del::<_, ()>(&key).await.to_internal_error()?;
     }
 
-    Ok(messages)
+    // Filter pre-purge envelopes. Per-channel epoch lookup is cached
+    // in this scope so a queue full of messages from one channel
+    // only hits redis once. Lookups that fail (redis hiccup) default
+    // to 0 so we don't drop fresh traffic on cache errors — accept
+    // the visible-clutter cost to preserve liveness.
+    let mut epoch_cache: std::collections::HashMap<String, i64> =
+        std::collections::HashMap::new();
+    let mut filtered = Vec::with_capacity(messages.len());
+    for event_json in messages {
+        match extract_envelope_epoch(&event_json) {
+            Some((channel_id, env_epoch)) => {
+                let current = if let Some(c) = epoch_cache.get(&channel_id) {
+                    *c
+                } else {
+                    let c = get_channel_epoch_cached(&channel_id).await.unwrap_or(0);
+                    epoch_cache.insert(channel_id.clone(), c);
+                    c
+                };
+                if env_epoch < current {
+                    log::debug!(
+                        "broker: dropping pre-purge envelope user={user_id} session={session_id} channel={channel_id} env_epoch={env_epoch} current={current}"
+                    );
+                    continue;
+                }
+                filtered.push(event_json);
+            }
+            None => filtered.push(event_json),
+        }
+    }
+
+    Ok(filtered)
 }
 
 /// Get the number of queued messages for a single device session.

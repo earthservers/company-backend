@@ -12,6 +12,7 @@ use rocket::{serde::json::Json, State};
 use serde::{Deserialize, Serialize};
 
 use crate::util::epoch_bump::mint_epoch_bump_token;
+use company_database::broker;
 use company_database::events::client::EventV1;
 
 /// # Purge Messages Before
@@ -125,6 +126,17 @@ pub async fn purge_before(
         Ok(Some(record)) => record.epoch.max(1) as u64,
         _ => 1,
     };
+
+    // Mirror the new epoch into the redis broker cache so
+    // `drain_offline_queue` can filter pre-purge envelopes for any
+    // peer device that was offline during the purge. Best-effort:
+    // a redis hiccup here leaves the cache stale but doesn't fail
+    // the purge — the client-side decrypt still enforces the epoch.
+    if let Err(err) = broker::set_channel_epoch_cached(channel_id, new_epoch as i64).await {
+        log::warn!(
+            "purge_before: failed to mirror channel epoch into broker cache for channel={channel_id}: {err}"
+        );
+    }
 
     let config = company_config::config().await;
     let token = match mint_epoch_bump_token(
