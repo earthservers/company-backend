@@ -29,9 +29,19 @@ pub struct StudioSubmitRequest {
     /// Whether the creator wants this to be free
     #[serde(default, alias = "creatorWantsFree", alias = "is_free")]
     pub creator_wants_free: bool,
-    /// Suggested price in cents
-    #[serde(default, alias = "suggestedPriceCents", alias = "price_cents")]
-    pub suggested_price_cents: u32,
+    /// Suggested price in EarthCoins (1 coin = $0.01 USD). The
+    /// `suggested_price_cents` alias is accepted for older Studio
+    /// builds that still send the cents-only field; the value is the
+    /// same number under the current peg.
+    #[serde(
+        default,
+        alias = "suggestedPriceCoins",
+        alias = "price_coins",
+        alias = "suggested_price_cents",
+        alias = "suggestedPriceCents",
+        alias = "price_cents"
+    )]
+    pub suggested_price_coins: u32,
     /// Optional thumbnail URL or base64
     #[serde(default, alias = "thumbnail_url")]
     pub thumbnail: Option<String>,
@@ -137,7 +147,7 @@ pub async fn studio_submit_decoration(
         duration_seconds,
         fps,
         is_free: data.creator_wants_free,
-        price_cents: data.suggested_price_cents,
+        price_coins: data.suggested_price_coins,
         creator_wants_free: data.creator_wants_free,
         thumbnail_url: data.thumbnail,
         download_count: 0,

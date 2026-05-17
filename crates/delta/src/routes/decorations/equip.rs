@@ -31,7 +31,7 @@ pub async fn equip_decoration(
     }
 
     // For paid decorations, check ownership
-    if !decoration.is_free && decoration.price_cents > 0 {
+    if !decoration.is_free && decoration.price_coins > 0 {
         let owns = db.user_owns_decoration(&user.id, &id).await?;
         if !owns {
             return Err(create_error!(FailedValidation {

@@ -16,8 +16,11 @@ pub struct ModerateDecorationRequest {
     pub reason: Option<String>,
     /// Moderator notes (internal)
     pub moderator_notes: Option<String>,
-    /// Override price in cents (moderator can set final price)
-    pub price_cents: Option<u32>,
+    /// Override price in EarthCoins (moderator sets final price).
+    /// Older clients can still send `price_cents` — same numeric value
+    /// under the current 1 coin = 1 cent peg.
+    #[serde(default, alias = "price_cents")]
+    pub price_coins: Option<u32>,
     /// Override free status (moderator can make it free or paid)
     pub is_free: Option<bool>,
 }
@@ -67,7 +70,7 @@ pub async fn moderate_decoration(
         approved_at,
         approved_by,
         data.moderator_notes.as_deref(),
-        data.price_cents,
+        data.price_coins,
         data.is_free,
     )
     .await?;

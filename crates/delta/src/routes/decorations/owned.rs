@@ -8,7 +8,8 @@ use serde::Serialize;
 #[derive(Debug, Serialize, JsonSchema)]
 pub struct OwnedDecorationEntry {
     pub decoration_id: String,
-    pub price_paid_cents: u32,
+    /// Price paid in EarthCoins.
+    pub price_paid_coins: u32,
     pub purchased_at: String,
 }
 
@@ -28,7 +29,7 @@ pub async fn list_owned_decorations(
             .into_iter()
             .map(|p| OwnedDecorationEntry {
                 decoration_id: p.decoration_id,
-                price_paid_cents: p.price_paid_cents,
+                price_paid_coins: p.price_paid_coins,
                 purchased_at: p.purchased_at.to_string(),
             })
             .collect(),

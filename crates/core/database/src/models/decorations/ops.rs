@@ -1,7 +1,7 @@
 use iso8601_timestamp::Timestamp;
 use company_result::Result;
 
-use crate::{CashoutRequest, CreatorBalance, CreatorEarnings, Decoration, DecorationPurchase};
+use crate::{Decoration, DecorationPurchase};
 
 #[cfg(feature = "mongodb")]
 mod mongodb;
@@ -34,7 +34,7 @@ pub trait AbstractDecorations: Sync + Send {
         approved_at: Option<Timestamp>,
         approved_by: Option<&str>,
         moderator_notes: Option<&str>,
-        price_cents: Option<u32>,
+        price_coins: Option<u32>,
         is_free: Option<bool>,
     ) -> Result<()>;
 
@@ -48,7 +48,7 @@ pub trait AbstractDecorations: Sync + Send {
         lottie_json: Option<&str>,
         thumbnail_url: Option<&str>,
         creator_wants_free: Option<bool>,
-        price_cents: Option<u32>,
+        price_coins: Option<u32>,
         fps: Option<u32>,
         duration_seconds: Option<f64>,
         reset_to_pending: bool,
@@ -61,6 +61,10 @@ pub trait AbstractDecorations: Sync + Send {
     async fn decrement_decoration_counter(&self, id: &str, field: &str) -> Result<()>;
 
     // ── Marketplace operations ──
+    //
+    // Coin movement itself lives in Earth Nexus (`/transfer`). The
+    // Company side only records ownership — no creator-earnings or
+    // creator-balance bookkeeping here.
 
     /// Insert a decoration purchase record
     async fn insert_decoration_purchase(&self, purchase: &DecorationPurchase) -> Result<()>;
@@ -70,33 +74,4 @@ pub trait AbstractDecorations: Sync + Send {
 
     /// Fetch all decorations owned by a user
     async fn fetch_user_owned_decorations(&self, user_id: &str) -> Result<Vec<DecorationPurchase>>;
-
-    /// Insert a creator earnings record
-    async fn insert_creator_earnings(&self, earnings: &CreatorEarnings) -> Result<()>;
-
-    /// Fetch creator earnings with optional decoration filter
-    async fn fetch_creator_earnings(
-        &self,
-        creator_id: &str,
-        decoration_id: Option<&str>,
-        limit: i64,
-        offset: i64,
-    ) -> Result<Vec<CreatorEarnings>>;
-
-    /// Get or create creator balance
-    async fn fetch_creator_balance(&self, creator_id: &str) -> Result<CreatorBalance>;
-
-    /// Add to a creator's available balance
-    async fn add_to_creator_balance(&self, creator_id: &str, amount_cents: i64) -> Result<()>;
-
-    /// Insert a cashout request and deduct from available balance
-    async fn insert_cashout_request(&self, request: &CashoutRequest) -> Result<()>;
-
-    /// Fetch cashout requests for a creator
-    async fn fetch_cashout_requests(
-        &self,
-        creator_id: &str,
-        limit: i64,
-        offset: i64,
-    ) -> Result<Vec<CashoutRequest>>;
 }

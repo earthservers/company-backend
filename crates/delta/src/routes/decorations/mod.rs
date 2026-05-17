@@ -4,8 +4,6 @@ use rocket::Route;
 use schemars::JsonSchema;
 use serde::Serialize;
 
-mod cashout;
-mod earnings;
 mod equip;
 mod fetch;
 mod list;
@@ -32,10 +30,6 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         equip::unequip_decoration,
         moderate::moderate_decoration,
         purchase::purchase_decoration,
-        earnings::get_creator_earnings,
-        earnings::get_creator_balance,
-        cashout::request_cashout,
-        cashout::list_cashout_requests,
     ]
 }
 
@@ -76,8 +70,8 @@ pub struct DecorationResponse {
     pub fps: u32,
     /// Whether this decoration is free
     pub is_free: bool,
-    /// Price in cents (0 = free)
-    pub price_cents: u32,
+    /// Price in EarthCoins (1 coin = $0.01 USD). 0 = free.
+    pub price_coins: u32,
     /// Thumbnail URL for marketplace
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail_url: Option<String>,
@@ -113,7 +107,7 @@ impl From<Decoration> for DecorationResponse {
             duration_seconds: d.duration_seconds,
             fps: d.fps,
             is_free: d.is_free,
-            price_cents: d.price_cents,
+            price_coins: d.price_coins,
             thumbnail_url: d.thumbnail_url,
             download_count: d.download_count,
             active_users_count: d.active_users_count,

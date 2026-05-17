@@ -44,6 +44,17 @@ pub async fn web() -> Rocket<Build> {
     log::info!("database_here {db:?}");
     db.migrate_database().await.unwrap();
 
+    // Spawn the Nexus subscription-state refresh task. No-ops when
+    // config.nexus.base_url is empty (dev without Nexus running). This
+    // is what catches renewals, payment failures, and Stripe-Portal
+    // cancellations that the user-triggered /subscription-refresh flow
+    // doesn't see.
+    crate::util::nexus_refresh_task::spawn(
+        db.clone(),
+        config.nexus.base_url.clone(),
+        config.nexus.refresh_interval_secs,
+    );
+
     // Setup Authifier event channel
     let (_, receiver) = unbounded();
 

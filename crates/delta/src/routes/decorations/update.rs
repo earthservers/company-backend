@@ -12,7 +12,10 @@ pub struct UpdateDecorationRequest {
     pub lottie_json: Option<serde_json::Value>,
     pub thumbnail: Option<String>,
     pub creator_wants_free: Option<bool>,
-    pub suggested_price_cents: Option<u32>,
+    /// Suggested price in EarthCoins. Older clients sending
+    /// `suggested_price_cents` continue to work — same numeric value.
+    #[serde(default, alias = "suggested_price_cents")]
+    pub suggested_price_coins: Option<u32>,
 }
 
 #[derive(Debug, Serialize, JsonSchema)]
@@ -76,7 +79,7 @@ pub async fn update_decoration(
         lottie_str.as_deref(),
         data.thumbnail.as_deref(),
         data.creator_wants_free,
-        data.suggested_price_cents,
+        data.suggested_price_coins,
         fps,
         duration,
         needs_rereview,

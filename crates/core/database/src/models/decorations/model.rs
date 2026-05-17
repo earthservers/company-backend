@@ -42,50 +42,10 @@ auto_derived!(
         pub user_id: String,
         /// Decoration purchased
         pub decoration_id: String,
-        /// Price paid in cents
-        pub price_paid_cents: u32,
+        /// Price paid in EarthCoins (1 coin = $0.01 USD at the current peg)
+        pub price_paid_coins: u32,
         /// When the purchase was made
         pub purchased_at: Timestamp,
-    }
-
-    /// Creator earnings from a single sale
-    pub struct CreatorEarnings {
-        /// Unique Id
-        #[serde(rename = "_id")]
-        pub id: String,
-        /// Creator user ID
-        pub creator_id: String,
-        /// Decoration sold
-        pub decoration_id: String,
-        /// Reference to the purchase
-        pub sale_id: String,
-        /// Full sale amount in cents
-        pub gross_amount_cents: u32,
-        /// Platform fee in cents (40%)
-        pub platform_fee_cents: u32,
-        /// Creator payout in cents (60%)
-        pub net_amount_cents: u32,
-        /// When this earning was recorded
-        pub created_at: Timestamp,
-    }
-
-    /// Creator's aggregated balance
-    pub struct CreatorBalance {
-        /// Creator user ID (primary key)
-        #[serde(rename = "_id")]
-        pub creator_id: String,
-        /// Available balance for cashout in cents
-        #[serde(default)]
-        pub available_balance_cents: i64,
-        /// Total lifetime earnings in cents
-        #[serde(default)]
-        pub lifetime_earnings_cents: i64,
-        /// Total lifetime cashouts in cents
-        #[serde(default)]
-        pub lifetime_cashouts_cents: i64,
-        /// Last cashout timestamp
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub last_cashout_at: Option<Timestamp>,
     }
 );
 
@@ -128,9 +88,11 @@ pub struct Decoration {
     /// Whether this decoration is free
     #[serde(default)]
     pub is_free: bool,
-    /// Price in cents (0 = free)
+    /// Price in EarthCoins (1 coin = $0.01 USD at the current peg).
+    /// Source of truth for purchase pricing — `purchase.rs` reads this
+    /// and passes it to Nexus's `/transfer` as the coin amount.
     #[serde(default)]
-    pub price_cents: u32,
+    pub price_coins: u32,
     /// What the creator requested (free or paid)
     #[serde(default)]
     pub creator_wants_free: bool,
@@ -157,29 +119,3 @@ pub struct Decoration {
     pub moderator_notes: Option<String>,
 }
 
-/// A cashout request from a creator
-///
-/// Note: Cannot use auto_derived! because serde_json::Value does not implement Eq.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CashoutRequest {
-    /// Unique Id
-    #[serde(rename = "_id")]
-    pub id: String,
-    /// Creator user ID
-    pub creator_id: String,
-    /// Amount to cash out in cents
-    pub amount_cents: u32,
-    /// Status: pending, processing, completed, rejected
-    pub status: String,
-    /// Payment method: paypal, stripe, etc.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub payment_method: Option<String>,
-    /// Payment details as JSON string (e.g. email for PayPal)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub payment_details: Option<String>,
-    /// When this request was created
-    pub created_at: Timestamp,
-    /// When this request was processed
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub processed_at: Option<Timestamp>,
-}

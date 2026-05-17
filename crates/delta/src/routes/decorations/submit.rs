@@ -42,6 +42,11 @@ pub struct SubmitDecorationRequest {
     /// Whether the creator wants this to be free
     #[serde(default)]
     pub creator_wants_free: bool,
+    /// Suggested price in EarthCoins (only meaningful for paid items).
+    /// Older clients sending `suggested_price_cents` continue to work —
+    /// at the current 1 coin = 1 cent peg the numeric value matches.
+    #[serde(default, alias = "suggested_price_cents")]
+    pub suggested_price_coins: u32,
     /// Optional thumbnail URL
     pub thumbnail_url: Option<String>,
 }
@@ -117,7 +122,8 @@ pub async fn submit_decoration(
         }));
     }
 
-    // Serialize the lottie_json + metadata to store after payment
+    // Serialize the lottie_json + metadata to store after payment.
+    // The webhook handler reads this back to insert the Decoration row.
     let metadata_json = serde_json::json!({
         "name": data.name,
         "description": data.description,
@@ -127,6 +133,7 @@ pub async fn submit_decoration(
         "duration_seconds": data.duration_seconds,
         "fps": data.fps,
         "creator_wants_free": data.creator_wants_free,
+        "suggested_price_coins": data.suggested_price_coins,
         "thumbnail_url": data.thumbnail_url,
     });
 

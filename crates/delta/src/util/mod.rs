@@ -5,6 +5,8 @@ pub mod epoch_bump;
 pub mod external_auth;
 pub mod interaction_store;
 pub mod license_verification;
+pub mod nexus;
+pub mod nexus_refresh_task;
 pub mod pairing_attestation;
 pub mod ratelimits;
 pub mod test;

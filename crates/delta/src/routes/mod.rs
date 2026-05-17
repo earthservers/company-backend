@@ -19,7 +19,6 @@ mod invites;
 mod licenses;
 mod onboard;
 mod policy;
-mod premium;
 mod push;
 mod root;
 mod safety;
@@ -57,8 +56,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
             "/webhooks" => webhooks::routes(),
             "/interactions" => interactions::routes(),
 
-            "/premium" => premium::routes(),
-            "/decorations" => decorations::routes(),
+"/decorations" => decorations::routes(),
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
             "/assets" => assets::routes()
@@ -86,8 +84,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
             "/devices" => devices::routes(),
             "/interactions" => interactions::routes(),
 
-            "/premium" => premium::routes(),
-            "/decorations" => decorations::routes(),
+"/decorations" => decorations::routes(),
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
             "/assets" => assets::routes()
@@ -117,8 +114,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
             "/webhooks" => webhooks::routes(),
             "/interactions" => interactions::routes(),
 
-            "/premium" => premium::routes(),
-            "/decorations" => decorations::routes(),
+"/decorations" => decorations::routes(),
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
             "/assets" => assets::routes()
@@ -145,8 +141,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
             "/devices" => devices::routes(),
             "/interactions" => interactions::routes(),
 
-            "/premium" => premium::routes(),
-            "/decorations" => decorations::routes(),
+"/decorations" => decorations::routes(),
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
             "/assets" => assets::routes()
@@ -162,11 +157,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
     rocket = rocket.mount("/", oauth_link::routes());
     rocket = rocket.mount("/0.8", oauth_link::routes());
 
-    // Mount Stripe webhook routes separately (no OpenAPI, no user auth)
-    rocket = rocket.mount("/premium", premium::webhook_routes());
-    rocket = rocket.mount("/0.8/premium", premium::webhook_routes());
-
-    // Mount training data pipeline routes (no OpenAPI, JWT auth)
+// Mount training data pipeline routes (no OpenAPI, JWT auth)
     rocket = rocket.mount("/api/training", training::training_routes());
 
     // Mount license activation proxy (no OpenAPI, user auth)

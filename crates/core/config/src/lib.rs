@@ -652,7 +652,7 @@ fn default_external_public_key_path() -> String {
 fn default_external_user_token_ttl_secs() -> u64 { 900 } // 15 minutes
 fn default_external_service_token_ttl_secs() -> u64 { 3600 } // 1 hour
 fn default_external_allowed_audiences() -> Vec<String> {
-    vec!["earthsocial".to_string()]
+    vec!["earthsocial".to_string(), "earth-nexus".to_string()]
 }
 fn default_external_cookie_domain() -> String {
     ".earthservers.net".to_string()
@@ -694,6 +694,41 @@ pub struct Settings {
     pub cosmetics: Cosmetics,
     #[serde(default)]
     pub external_auth: ExternalAuth,
+    /// Earth Nexus base URL (without trailing slash). Company's
+    /// `User::active_subscription_tier()` reads from a local mirror of
+    /// Nexus's subscriptions table, refreshed via this endpoint on login,
+    /// on a `subscription-refresh` route hit, or on a per-request staleness
+    /// check. Leave empty in environments where Nexus isn't running to
+    /// silently disable the refresh (everyone stays on whatever the local
+    /// `user.subscription` field says, including `Free` for new users).
+    #[serde(default)]
+    pub nexus: Nexus,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Nexus {
+    /// HTTPS URL of the Earth Nexus billing service (without trailing slash),
+    /// e.g. `https://api.nexus.earthservers.net`. When empty, subscription
+    /// refresh from Nexus is disabled.
+    #[serde(default)]
+    pub base_url: String,
+    /// How often (in seconds) Company auto-refreshes a user's subscription
+    /// state from Nexus during request processing. Default 1800 (30min).
+    /// The `POST /users/me/subscription-refresh` endpoint forces an
+    /// immediate refresh regardless of this value.
+    #[serde(default = "default_nexus_refresh_interval_secs")]
+    pub refresh_interval_secs: u64,
+}
+
+fn default_nexus_refresh_interval_secs() -> u64 { 1800 }
+
+impl Default for Nexus {
+    fn default() -> Self {
+        Self {
+            base_url: String::new(),
+            refresh_interval_secs: default_nexus_refresh_interval_secs(),
+        }
+    }
 }
 
 impl Settings {

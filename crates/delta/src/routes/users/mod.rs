@@ -15,6 +15,7 @@ mod get_default_avatar;
 mod open_dm;
 mod remove_friend;
 mod send_friend_request;
+mod subscription_refresh;
 mod unblock_user;
 
 pub fn routes() -> (Vec<Route>, OpenApi) {
@@ -27,6 +28,7 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         change_username::change_username,
         get_default_avatar::default_avatar,
         fetch_profile::profile,
+        subscription_refresh::refresh,
         // Direct Messaging
         fetch_dms::direct_messages,
         open_dm::open_dm,
