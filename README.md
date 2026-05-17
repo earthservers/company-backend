@@ -1,37 +1,63 @@
 <div align="center">
-<h1>
-  Stoat Backend
-  
-  [![Stars](https://img.shields.io/github/stars/revoltchat/backend?style=flat-square&logoColor=white)](https://github.com/revoltchat/backend/stargazers)
-  [![Forks](https://img.shields.io/github/forks/revoltchat/backend?style=flat-square&logoColor=white)](https://github.com/revoltchat/backend/network/members)
-  [![Pull Requests](https://img.shields.io/github/issues-pr/revoltchat/backend?style=flat-square&logoColor=white)](https://github.com/revoltchat/backend/pulls)
-  [![Issues](https://img.shields.io/github/issues/revoltchat/backend?style=flat-square&logoColor=white)](https://github.com/revoltchat/backend/issues)
-  [![Contributors](https://img.shields.io/github/contributors/revoltchat/backend?style=flat-square&logoColor=white)](https://github.com/revoltchat/backend/graphs/contributors)
-  [![License](https://img.shields.io/github/license/revoltchat/backend?style=flat-square&logoColor=white)](https://github.com/revoltchat/backend/blob/main/LICENSE)
-</h1>
-The services and libraries that power the Revolt service.<br/>
-<br/>
 
-| Crate              | Path                                               | Description                         |                                                                                                                                                                                                                                                                                                           |
-| ------------------ | -------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `core/config`      | [crates/core/config](crates/core/config)           | Core: Configuration                 | ![Crates.io Version](https://img.shields.io/crates/v/revolt-config) ![Crates.io Version](https://img.shields.io/crates/msrv/revolt-config) ![Crates.io Version](https://img.shields.io/crates/size/revolt-config) ![Crates.io License](https://img.shields.io/crates/l/revolt-config)                     |
-| `core/database`    | [crates/core/database](crates/core/database)       | Core: Database Implementation       | ![Crates.io Version](https://img.shields.io/crates/v/revolt-database) ![Crates.io Version](https://img.shields.io/crates/msrv/revolt-database) ![Crates.io Version](https://img.shields.io/crates/size/revolt-database) ![Crates.io License](https://img.shields.io/crates/l/revolt-database)             |
-| `core/files`       | [crates/core/files](crates/core/files)             | Core: S3 and encryption subroutines | ![Crates.io Version](https://img.shields.io/crates/v/revolt-files) ![Crates.io Version](https://img.shields.io/crates/msrv/revolt-files) ![Crates.io Version](https://img.shields.io/crates/size/revolt-files) ![Crates.io License](https://img.shields.io/crates/l/revolt-files)                         |
-| `core/models`      | [crates/core/models](crates/core/models)           | Core: API Models                    | ![Crates.io Version](https://img.shields.io/crates/v/revolt-models) ![Crates.io Version](https://img.shields.io/crates/msrv/revolt-models) ![Crates.io Version](https://img.shields.io/crates/size/revolt-models) ![Crates.io License](https://img.shields.io/crates/l/revolt-models)                     |
-| `core/permissions` | [crates/core/permissions](crates/core/permissions) | Core: Permission Logic              | ![Crates.io Version](https://img.shields.io/crates/v/revolt-permissions) ![Crates.io Version](https://img.shields.io/crates/msrv/revolt-permissions) ![Crates.io Version](https://img.shields.io/crates/size/revolt-permissions) ![Crates.io License](https://img.shields.io/crates/l/revolt-permissions) |
-| `core/presence`    | [crates/core/presence](crates/core/presence)       | Core: User Presence                 | ![Crates.io Version](https://img.shields.io/crates/v/revolt-presence) ![Crates.io Version](https://img.shields.io/crates/msrv/revolt-presence) ![Crates.io Version](https://img.shields.io/crates/size/revolt-presence) ![Crates.io License](https://img.shields.io/crates/l/revolt-presence)             |
-| `core/result`      | [crates/core/result](crates/core/result)           | Core: Result and Error types        | ![Crates.io Version](https://img.shields.io/crates/v/revolt-result) ![Crates.io Version](https://img.shields.io/crates/msrv/revolt-result) ![Crates.io Version](https://img.shields.io/crates/size/revolt-result) ![Crates.io License](https://img.shields.io/crates/l/revolt-result)                     |
-| `core/coalesced`   | [crates/core/coalesced](crates/core/coalesced)     | Core: Coalescion service            | ![Crates.io Version](https://img.shields.io/crates/v/revolt-coalesced) ![Crates.io Version](https://img.shields.io/crates/msrv/revolt-coalesced) ![Crates.io Version](https://img.shields.io/crates/size/revolt-coalesced) ![Crates.io License](https://img.shields.io/crates/l/revolt-coalesced)         |
-| `delta`            | [crates/delta](crates/delta)                       | REST API server                     | ![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)                                                                                                                                                                                                                                |
-| `bonfire`          | [crates/bonfire](crates/bonfire)                   | WebSocket events server             | ![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)                                                                                                                                                                                                                                |
-| `services/january` | [crates/services/january](crates/services/january) | Proxy server                        | ![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)                                                                                                                                                                                                                                |
-| `services/gifbox`  | [crates/services/gifbox](crates/services/gifbox)   | Tenor proxy server                  | ![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)                                                                                                                                                                                                                                |
-| `services/autumn`  | [crates/services/autumn](crates/services/autumn)   | File server                         | ![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)                                                                                                                                                                                                                                |
-| `daemons/crond`    | [crates/daemons/crond](crates/daemons/crond)       | Timed data clean up daemon server   | ![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)                                                                                                                                                                                                                                |
-| `daemons/pushd`    | [crates/daemons/pushd](crates/daemons/pushd)       | Push notification daemon server     | ![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue)                                                                                                                                                                                                                                |
+<img src="https://company.earthservers.net/assets/company-text-logo.svg" alt="Company" height="80" />
+
+<h1>Company Backend</h1>
+
+**The privacy-first social platform with built-in monetization.**
+
+[![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue?style=flat-square)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/earthservers/stoatchat-build?style=flat-square&logoColor=white)](https://github.com/earthservers/stoatchat-build/stargazers)
+[![Forks](https://img.shields.io/github/forks/earthservers/stoatchat-build?style=flat-square&logoColor=white)](https://github.com/earthservers/stoatchat-build/network/members)
+[![Issues](https://img.shields.io/github/issues/earthservers/stoatchat-build?style=flat-square&logoColor=white)](https://github.com/earthservers/stoatchat-build/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/earthservers/stoatchat-build?style=flat-square&logoColor=white)](https://github.com/earthservers/stoatchat-build/pulls)
+[![Rust](https://img.shields.io/badge/rust-1.86%2B-orange?style=flat-square&logo=rust)](https://www.rust-lang.org/)
 
 </div>
-<br/>
+
+> Company Backend is an AGPL-3.0 fork of [revoltchat/backend](https://github.com/revoltchat/backend), continued and extended for end-to-end encryption, peer-to-peer signaling, live voice and streaming, and a creator-economy decorations marketplace. Upstream copyright notices are preserved per AGPL §5.
+
+## What Company Adds
+
+On top of the Revolt foundation, this backend ships:
+
+- **End-to-end encryption (E2EE)** — encrypted channel invitations, server-signed epoch bumps for forward secrecy, pairing attestation, and an isolated `signer` service for cryptographic operations. Encrypted file storage in `core/files`.
+- **P2P signaling** — [`company-beacon-signal`](company-beacon-signal), a standalone Rust signaling service for peer-to-peer connections between clients.
+- **Voice & live streaming** — LiveKit-backed voice channels via the [`voice-ingress`](crates/daemons/voice-ingress) daemon, live-stream routes, and viewer/ring management.
+- **Decorations marketplace** — a full creator-economy system: submit, purchase, equip, moderate, and cash out cosmetic decorations. Includes studio submission flow and earnings tracking.
+- **Stripe payments + coin economy** — Stripe integration backed by an internal coin currency for in-app purchases.
+- **Cosmetic moderation** — dedicated moderation queue for user-generated cosmetics.
+- **Onboarding flows** — guided onboarding for new accounts.
+
+## Components
+
+### Crates
+
+| Crate                    | Path                                                              | Description                                                       |
+| ------------------------ | ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `core/config`            | [crates/core/config](crates/core/config)                          | Configuration                                                     |
+| `core/database`          | [crates/core/database](crates/core/database)                      | Database implementation (MongoDB)                                 |
+| `core/files`             | [crates/core/files](crates/core/files)                            | S3 storage with file encryption                                   |
+| `core/models`            | [crates/core/models](crates/core/models)                          | API models (incl. decorations, encrypted invites)                 |
+| `core/permissions`       | [crates/core/permissions](crates/core/permissions)                | Permission logic                                                  |
+| `core/presence`          | [crates/core/presence](crates/core/presence)                      | User presence                                                     |
+| `core/result`            | [crates/core/result](crates/core/result)                          | Result and error types                                            |
+| `core/coalesced`         | [crates/core/coalesced](crates/core/coalesced)                    | Coalescion service                                                |
+| `delta`                  | [crates/delta](crates/delta)                                      | REST API (E2EE, voice, streams, decorations, payments routes)     |
+| `bonfire`                | [crates/bonfire](crates/bonfire)                                  | WebSocket events server                                           |
+| `services/january`       | [crates/services/january](crates/services/january)                | Link/embed proxy                                                  |
+| `services/gifbox`        | [crates/services/gifbox](crates/services/gifbox)                  | Tenor GIF proxy                                                   |
+| `services/autumn`        | [crates/services/autumn](crates/services/autumn)                  | File server (encrypted uploads)                                   |
+| `daemons/crond`          | [crates/daemons/crond](crates/daemons/crond)                      | Scheduled data cleanup                                            |
+| `daemons/pushd`          | [crates/daemons/pushd](crates/daemons/pushd)                      | Push notification daemon                                          |
+| `daemons/voice-ingress`  | [crates/daemons/voice-ingress](crates/daemons/voice-ingress)      | LiveKit voice ingress daemon                                      |
+
+### Sibling services (outside `crates/`)
+
+| Service                  | Path                                              | Description                                                |
+| ------------------------ | ------------------------------------------------- | ---------------------------------------------------------- |
+| `company-beacon-signal`  | [company-beacon-signal](company-beacon-signal)    | P2P signaling service (Rust)                               |
+| `signer`                 | [signer](signer)                                  | Isolated Python signing service for E2EE attestation       |
 
 ## Minimum Supported Rust Version
 
@@ -59,7 +85,7 @@ As a heads-up, the development environment uses the following ports:
 | Redis                     |      6379      |
 | MinIO                     |     14009      |
 | Maildev                   | 14025<br>14080 |
-| Revolt Web App            |     14701      |
+| Company Web App           |     14701      |
 | RabbitMQ                  | 5672<br>15672  |
 | `crates/delta`            |     14702      |
 | `crates/bonfire`          |     14703      |
@@ -70,8 +96,8 @@ As a heads-up, the development environment uses the following ports:
 Now you can clone and build the project:
 
 ```bash
-git clone https://github.com/revoltchat/backend revolt-backend
-cd revolt-backend
+git clone https://github.com/earthservers/stoatchat-build company-backend
+cd company-backend
 mise build
 ```
 
@@ -145,6 +171,8 @@ cargo run --bin revolt-january
 cargo run --bin revolt-gifbox
 # run the push daemon (not usually needed in regular development)
 cargo run --bin revolt-pushd
+# run the voice ingress daemon
+cargo run --bin voice-ingress
 
 # hint:
 # mold -run <cargo build, cargo run, etc...>
@@ -198,7 +226,7 @@ Tag and push a new release by running:
 just release
 ```
 
-If you have bumped the crate versions, proceed to [GitHub releases](https://github.com/revoltchat/backend/releases/new) to create a changelog.
+If you have bumped the crate versions, proceed to [GitHub releases](https://github.com/earthservers/stoatchat-build/releases/new) to create a changelog.
 
 ## Testing
 
@@ -217,6 +245,12 @@ TEST_DB=MONGODB cargo nextest run
 
 ## License
 
-The Revolt backend is generally licensed under the [GNU Affero General Public License v3.0](https://github.com/revoltchat/backend/blob/master/LICENSE).
+Company Backend is licensed under the [GNU Affero General Public License v3.0](LICENSE), the same license as the upstream [Revolt backend](https://github.com/revoltchat/backend) it is derived from.
 
 **Individual crates may supply their own licenses!**
+
+If you run a modified version of this code as a network service, AGPL §13 requires you to offer the corresponding source code to your users.
+
+## Credits
+
+This project is a continuation of the work done by the [Revolt](https://revolt.chat) team and contributors. We're grateful for the foundation they built. All Revolt copyright notices and attribution are preserved throughout the codebase.
