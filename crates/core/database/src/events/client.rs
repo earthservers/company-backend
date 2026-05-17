@@ -306,6 +306,14 @@ pub enum EventV1 {
         count: u32,
     },
 
+    /// P2P voice signalling relayed from another voice channel member.
+    /// Payload is opaque to the server (SDP, ICE candidates, etc.).
+    VoiceSignalRelay {
+        channel_id: String,
+        from_user: String,
+        payload: serde_json::Value,
+    },
+
     /// Stream analytics metrics updated (for dashboard)
     StreamMetricsUpdate {
         channel: String,

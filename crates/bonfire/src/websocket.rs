@@ -536,6 +536,45 @@ async fn worker(
                             topic_signal_s.send(()).await.ok();
                         }
                     }
+                    ClientMessage::VoiceSignal {
+                        channel_id,
+                        target_user,
+                        payload,
+                    } => {
+                        // Only members of the voice channel can relay signals.
+                        let members =
+                            match company_database::voice::get_voice_channel_members(&channel_id)
+                                .await
+                            {
+                                Ok(Some(m)) => m,
+                                _ => continue,
+                            };
+
+                        if !members.iter().any(|m| m == &user_id) {
+                            continue;
+                        }
+
+                        let event = EventV1::VoiceSignalRelay {
+                            channel_id: channel_id.clone(),
+                            from_user: user_id.clone(),
+                            payload,
+                        };
+
+                        if let Some(target) = target_user {
+                            // Direct unicast — only deliver if target is a member.
+                            if members.iter().any(|m| m == &target) {
+                                event.p(target).await;
+                            }
+                        } else {
+                            // Broadcast to every other voice channel member.
+                            for member in members {
+                                if member == user_id {
+                                    continue;
+                                }
+                                event.clone().p(member).await;
+                            }
+                        }
+                    }
                     ClientMessage::Ping { data, responded } => {
                         if responded.is_none() {
                             write
