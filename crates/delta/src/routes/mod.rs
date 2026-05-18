@@ -25,6 +25,7 @@ mod safety;
 mod servers;
 mod streams;
 mod sync;
+mod voice;
 pub mod training;
 mod users;
 mod webhooks;
@@ -59,6 +60,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
 "/decorations" => decorations::routes(),
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
+            "/voice" => voice::routes(),
             "/assets" => assets::routes()
         };
     } else {
@@ -87,6 +89,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
 "/decorations" => decorations::routes(),
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
+            "/voice" => voice::routes(),
             "/assets" => assets::routes()
         };
     }
@@ -117,6 +120,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
 "/decorations" => decorations::routes(),
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
+            "/voice" => voice::routes(),
             "/assets" => assets::routes()
         };
     } else {
@@ -144,6 +148,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
 "/decorations" => decorations::routes(),
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
+            "/voice" => voice::routes(),
             "/assets" => assets::routes()
         };
     }

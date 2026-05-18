@@ -1674,6 +1674,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "sha1 0.10.6",
  "sha2 0.10.9",
  "ulid 0.4.1",
  "url",

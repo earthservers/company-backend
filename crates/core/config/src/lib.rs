@@ -703,6 +703,54 @@ pub struct Settings {
     /// `user.subscription` field says, including `Free` for new users).
     #[serde(default)]
     pub nexus: Nexus,
+    /// coturn / TURN credential minting. Used by the
+    /// `POST /voice/turn-credentials` endpoint to issue
+    /// time-limited HMAC-SHA1 credentials for clients that need
+    /// non-LiveKit WebRTC relays (P2P voice, beacon files). Leave
+    /// `static_auth_secret` empty to disable the endpoint (returns
+    /// 503).
+    #[serde(default)]
+    pub turn: Turn,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Turn {
+    /// Shared secret matching coturn's `static-auth-secret=` line.
+    /// Used as the HMAC-SHA1 key when minting credentials.
+    /// Empty disables the endpoint.
+    #[serde(default)]
+    pub static_auth_secret: String,
+    /// TURN server URLs the client should use. Sent in every
+    /// credential response so the client doesn't need a separate
+    /// configuration source. Example: `["turns:turn.example:5349",
+    /// "turn:turn.example:3478"]`.
+    #[serde(default)]
+    pub urls: Vec<String>,
+    /// Optional coturn `realm=` value. Some clients send it
+    /// alongside the username during the long-term-cred handshake;
+    /// most ignore it when REST-style creds are used. Present here
+    /// for compatibility / future use.
+    #[serde(default)]
+    pub realm: String,
+    /// Lifetime (seconds) of issued credentials. Default 3600 (1h).
+    /// The username is `<unix_timestamp_expiry>:<user_id>` so even
+    /// if the response is intercepted, the creds expire after this
+    /// window.
+    #[serde(default = "default_turn_ttl_secs")]
+    pub ttl_secs: u64,
+}
+
+fn default_turn_ttl_secs() -> u64 { 3600 }
+
+impl Default for Turn {
+    fn default() -> Self {
+        Self {
+            static_auth_secret: String::new(),
+            urls: Vec::new(),
+            realm: String::new(),
+            ttl_secs: default_turn_ttl_secs(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

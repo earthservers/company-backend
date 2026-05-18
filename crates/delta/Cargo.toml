@@ -95,7 +95,9 @@ base64 = "0.22"
 hex = "0.4"
 
 # payments (Stripe webhook signature verification)
+# coturn REST-style TURN credentials (HMAC-SHA1 of username)
 hmac = "0.12"
+sha1 = "0.10"
 
 # image dimension detection for message attachments
 imagesize = "0.13.0"
