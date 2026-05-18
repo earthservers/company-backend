@@ -109,10 +109,18 @@ async fn main() {
         .filter(|s| !s.is_empty())
         .map(|s| s.into_bytes());
 
+    // Two auth layers exist:
+    //   1. Handshake HMAC (this env var) — optional rate-limiting layer.
+    //      The browser bundle can't keep this secret, so it adds little
+    //      value in a public-SPA deployment.
+    //   2. Per-message Ed25519 self-signed JWT — always required (see
+    //      `validate_token` in handlers.rs). This is the real identity
+    //      check; it gates Register / Resolve / Signal regardless of
+    //      handshake mode.
     if signal_secret.is_some() {
-        info!("HMAC auth enabled");
+        info!("handshake HMAC: enabled; per-message Ed25519 JWT: enabled");
     } else {
-        info!("HMAC auth disabled — set SIGNAL_SECRET for production");
+        info!("handshake HMAC: disabled (open upgrade); per-message Ed25519 JWT: enabled");
     }
 
     let app_state = AppState {

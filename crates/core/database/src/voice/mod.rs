@@ -585,11 +585,17 @@ pub async fn set_call_notification_recipients(
     user_id: &str,
     recipients: &[String],
 ) -> Result<()> {
+    // Redis SET takes ONE value. redis-rs serializes a `&[String]` as
+    // multiple command args, which makes the resulting command
+    // (`SET key u1 u2 u3 EX 10`) malformed and Redis returns an error.
+    // Encode the recipients as a single JSON string instead — paired
+    // with the JSON decode in `get_call_notification_recipients`.
+    let encoded = serde_json::to_string(recipients).map_err(|_| create_error!(InternalError))?;
     get_connection()
         .await?
         .set_ex(
             format!("call_notification_recipients:{channel_id}-{user_id}"),
-            recipients,
+            encoded,
             10,
         )
         .await
@@ -600,13 +606,19 @@ pub async fn get_call_notification_recipients(
     channel_id: &str,
     user_id: &str,
 ) -> Result<Option<Vec<String>>> {
-    get_connection()
+    let raw: Option<String> = get_connection()
         .await?
         .get_del(format!(
             "call_notification_recipients:{channel_id}-{user_id}"
         ))
         .await
-        .to_internal_error()
+        .to_internal_error()?;
+    match raw {
+        Some(s) => Ok(Some(
+            serde_json::from_str(&s).map_err(|_| create_error!(InternalError))?,
+        )),
+        None => Ok(None),
+    }
 }
 
 pub async fn remove_user_from_voice_channels(db: &Database, voice_client: &VoiceClient, user_id: &str) -> Result<()> {

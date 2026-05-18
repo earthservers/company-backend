@@ -147,7 +147,11 @@ services:
     restart: unless-stopped
     environment:
       - SIGNAL_PORT=8080
-      - SIGNAL_SECRET=${COMPANY_SIGNAL_SECRET}     # unchanged — already from .env
+      # Empty/unset disables the handshake-HMAC layer; per-message
+      # Ed25519 JWT auth still gates every Register/Resolve/Signal.
+      # `:-` is the compose "default to empty" form — no warning when
+      # unset, real value picked up from .env when present.
+      - SIGNAL_SECRET=${COMPANY_SIGNAL_SECRET:-}
     networks:
       - internal
     ports:
