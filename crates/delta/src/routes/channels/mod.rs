@@ -30,6 +30,7 @@ mod message_unreact;
 mod permissions_set;
 mod permissions_set_default;
 mod voice_join;
+mod voice_leave;
 mod voice_stop_ring;
 mod voice_viewers;
 mod webhook_create;
@@ -57,6 +58,7 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         group_add_member::add_member,
         group_remove_member::remove_member,
         voice_join::call,
+        voice_leave::leave_call,
         voice_stop_ring::stop_ring,
         voice_viewers::get_viewers,
         analytics_current::get_current_analytics,

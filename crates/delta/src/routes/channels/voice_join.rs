@@ -1,10 +1,12 @@
 use company_config::config;
 use company_database::{
+    events::client::EventV1,
+    iso8601_timestamp::Timestamp,
     util::{permissions::perms, reference::Reference},
     voice::{
-        delete_voice_state, get_channel_node, get_user_voice_channels, get_viewer_count,
-        get_voice_channel_members, raise_if_in_voice, set_call_notification_recipients,
-        set_voice_connection_type, VoiceClient,
+        create_voice_state, delete_voice_state, get_channel_node, get_user_voice_channels,
+        get_viewer_count, get_voice_channel_members, raise_if_in_voice,
+        set_call_notification_recipients, set_voice_connection_type, VoiceClient,
     },
     Database, User,
 };
@@ -126,8 +128,43 @@ pub async fn call(
     if !use_livekit {
         // P2P voice: return signaling-only response (no LiveKit token).
         // Client uses P2PVoice.ts with WebRTC signaling via WebSocket.
+        //
+        // The LiveKit ingress daemon publishes VoiceChannelJoin off
+        // LiveKit webhooks — but for P2P there is no SFU and no webhook,
+        // so the join handler itself has to do the work the daemon
+        // would have done: create the voice state in Redis, fan out
+        // VoiceChannelJoin so the channel sidebar/preview populates,
+        // and stash any call-notification recipients so the recipient
+        // gets the incoming-call ring via the WS pipeline.
         let connection_type = if is_viewer { "viewer" } else { "participant" };
         set_voice_connection_type(channel.id(), &user.id, connection_type).await?;
+
+        if !is_viewer {
+            // Reject if the user is already in another voice channel —
+            // mirrors the LiveKit path's raise_if_in_voice gate. P2P
+            // joins skipped this check before, which allowed the
+            // "you're already in a call" state to drift away from the
+            // voice_states set the sidebar reads.
+            raise_if_in_voice(&user, channel.id()).await?;
+
+            let voice_state =
+                create_voice_state(channel.id(), channel.server(), &user.id, Timestamp::now_utc())
+                    .await?;
+
+            EventV1::VoiceChannelJoin {
+                id: channel.id().to_string(),
+                state: voice_state,
+            }
+            .p(channel.id().to_string())
+            .await;
+
+            if let Some(recipients) = recipients {
+                if !recipients.is_empty() {
+                    set_call_notification_recipients(channel.id(), &user.id, &recipients).await?;
+                }
+            }
+        }
+
         return Ok(Json(v0::CreateVoiceUserResponse {
             token: String::new(),
             url: String::new(),
