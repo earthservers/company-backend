@@ -18,6 +18,7 @@ use company_config::report_internal_error;
 use company_database::{
     events::{client::EventV1, server::ClientMessage},
     iso8601_timestamp::Timestamp,
+    voice::cleanup_user_voice_on_disconnect,
     Database, User, UserHint,
 };
 use company_presence::{create_session, delete_session};
@@ -221,9 +222,25 @@ pub async fn client(db: &'static Database, stream: TcpStream, addr: SocketAddr) 
     // Clean up presence session.
     let last_session = delete_session(&user_id, session_id).await;
 
-    // If this was the last session, notify other users that we just went offline.
+    // If this was the last session, notify other users that we just
+    // went offline AND tear down any voice-channel state. Without
+    // this voice cleanup, a browser refresh / crash / network drop
+    // mid-call leaves the user permanently flagged "in call" — they
+    // hit `AlreadyConnected` on every subsequent /join_call and can
+    // never rejoin until KeyDB is wiped manually.
+    //
+    // Voice cleanup is fire-and-forget: a failure here can't block
+    // the disconnect path. The same code that powers /leave_call
+    // runs inside `cleanup_user_voice_on_disconnect`, but without
+    // the LiveKit eviction (LiveKit handles its own timeouts).
     if last_session {
         state.broadcast_presence_change(false).await;
+
+        if let Err(err) = cleanup_user_voice_on_disconnect(db, &user_id).await {
+            warn!(
+                "voice cleanup on disconnect failed for user {user_id}: {err:?}"
+            );
+        }
     }
 }
 

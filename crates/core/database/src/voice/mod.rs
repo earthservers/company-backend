@@ -629,6 +629,44 @@ pub async fn remove_user_from_voice_channels(db: &Database, voice_client: &Voice
     Ok(())
 }
 
+/// Wipe a user's voice-state across every channel they're currently
+/// joined to. Intended for bonfire's WebSocket-disconnect path so
+/// browser refresh / crash / kill -9 / lost network don't leave the
+/// user permanently flagged as "in call" (which then makes
+/// `/join_call` return `AlreadyConnected` and the user can't rejoin).
+///
+/// Differs from `remove_user_from_voice_channels`:
+///   - No LiveKit eviction (no `VoiceClient` dependency). LiveKit
+///     handles participant timeout on its own; we don't want
+///     bonfire to depend on the SFU client.
+///   - Broadcasts `VoiceChannelLeave` so remaining members see the
+///     drop instantly.
+///   - Failures on individual channels don't abort cleanup of the rest.
+pub async fn cleanup_user_voice_on_disconnect(db: &Database, user_id: &str) -> Result<()> {
+    use crate::events::client::EventV1;
+    use crate::util::reference::Reference;
+
+    for channel_id in get_user_voice_channels(user_id).await? {
+        // If the channel was deleted out from under us, skip the
+        // server-id lookup but still purge the user-side Redis keys.
+        let server_id = match Reference::from_unchecked(&channel_id).as_channel(db).await {
+            Ok(c) => c.server().map(str::to_owned),
+            Err(_) => None,
+        };
+        let _ = delete_voice_state(&channel_id, server_id.as_deref(), user_id).await;
+        let _ = delete_voice_connection_type(&channel_id, user_id).await;
+
+        EventV1::VoiceChannelLeave {
+            id: channel_id.clone(),
+            user: user_id.to_string(),
+        }
+        .p(channel_id)
+        .await;
+    }
+
+    Ok(())
+}
+
 pub async fn remove_user_from_voice_channel(db: &Database, voice_client: &VoiceClient, channel_id: &str, user_id: &str) -> Result<()> {
     if let Some(node) = get_channel_node(channel_id).await? {
         let _ = voice_client.remove_user(&node, user_id, channel_id).await;
