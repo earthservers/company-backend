@@ -7,6 +7,7 @@ use rocket::{Build, Rocket};
 mod admin;
 mod assets;
 mod auth_external;
+mod beacons;
 mod bots;
 mod channels;
 mod cosmetics_moderation;
@@ -61,6 +62,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
             "/voice" => voice::routes(),
+            "/beacons" => beacons::routes(),
             "/assets" => assets::routes()
         };
     } else {
@@ -90,6 +92,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
             "/voice" => voice::routes(),
+            "/beacons" => beacons::routes(),
             "/assets" => assets::routes()
         };
     }
@@ -121,6 +124,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
             "/voice" => voice::routes(),
+            "/beacons" => beacons::routes(),
             "/assets" => assets::routes()
         };
     } else {
@@ -149,6 +153,7 @@ pub fn mount(config: Settings, mut rocket: Rocket<Build>) -> Rocket<Build> {
             "/cosmetics-moderation" => cosmetics_moderation::routes(),
             "/streams" => streams::routes(),
             "/voice" => voice::routes(),
+            "/beacons" => beacons::routes(),
             "/assets" => assets::routes()
         };
     }

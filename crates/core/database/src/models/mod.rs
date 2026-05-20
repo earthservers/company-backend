@@ -1,6 +1,7 @@
 mod admin_migrations;
 mod assets;
 mod audit_log;
+mod beacons;
 mod bot_commands;
 mod bots;
 mod channel_invites;
@@ -26,6 +27,7 @@ mod users;
 pub use admin_migrations::*;
 pub use assets::*;
 pub use audit_log::*;
+pub use beacons::*;
 pub use bot_commands::*;
 pub use bots::*;
 pub use channel_invites::*;
@@ -59,6 +61,7 @@ pub trait AbstractDatabase:
     + admin_migrations::AbstractMigrations
     + assets::AbstractAssets
     + audit_log::AbstractAuditLog
+    + beacons::AbstractBeacons
     + bot_commands::AbstractBotCommands
     + bots::AbstractBots
     + channels::AbstractChannels
