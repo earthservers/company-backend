@@ -7,6 +7,7 @@ use serde::Serialize;
 mod delete;
 mod list;
 mod register;
+mod request;
 mod seen;
 mod update;
 
@@ -17,6 +18,7 @@ pub fn routes() -> (Vec<Route>, OpenApi) {
         update::update_beacon,
         delete::delete_beacon,
         seen::record_beacon_seen,
+        request::request_beacon,
     ]
 }
 

@@ -314,6 +314,15 @@ pub enum EventV1 {
         payload: serde_json::Value,
     },
 
+    /// A peer tried to download one of this user's beacons but the
+    /// beacon host wasn't currently registered with signal-server.
+    /// The owner's frontend should, if the file is still in OPFS,
+    /// (re-)start the beacon host so the peer's retry succeeds.
+    BeaconRequested {
+        file_hash: String,
+        requester_user_id: String,
+    },
+
     /// Stream analytics metrics updated (for dashboard)
     StreamMetricsUpdate {
         channel: String,
