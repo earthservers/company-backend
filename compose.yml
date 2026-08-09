@@ -81,6 +81,7 @@ services:
     image: company-server:latest
     build:
       context: .
+      network: host
       args:
         TARGETARCH: amd64
     restart: unless-stopped
@@ -89,10 +90,8 @@ services:
       - ./Revolt.toml:/home/rust/src/Revolt.toml:ro
     networks:
       - internal
-    ports:
-      - "8500:8500"
     depends_on:
-      - delta                                      # ensures the shared image is built before this starts
+      - delta                                      # startup ordering only — depends_on does NOT order builds
       - rabbitmq
       - redis
       - livekit
@@ -111,7 +110,7 @@ services:
     networks:
       - internal
     depends_on:
-      - delta                                      # same reason
+      - delta                                      # startup ordering only — depends_on does NOT order builds
       - mongo
       - redis
       - rabbitmq
