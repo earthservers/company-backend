@@ -29,25 +29,26 @@ services:
     networks:
       - internal
 
-  livekit:
-    image: livekit/livekit-server:latest
-    restart: unless-stopped
-    volumes:
-      - ./livekit.yaml:/etc/livekit.yaml:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    command: --config /etc/livekit.yaml
-    networks:
-      - internal
-    ports:
-      - "127.0.0.1:7880:7880"
-      - "7881:7881/tcp"
-      - "50000-50020:50000-50020/udp"
-      - "3478:3478/udp"
-      - "5349:5349/tcp"
-    # NOTE: This mounts the HOST's /etc/letsencrypt — it must exist on Contabo
-    # (even if empty initially). LiveKit will fail to start until you've run
-    # certbot for the local.company.earthservers.net subdomain. If voice/video
-    # isn't critical for cutover, comment this whole service out and re-enable later.
+  # PRE-CERTBOT: livekit disabled until certbot has issued the cert for
+  # local.company.earthservers.net (it mounts the host's /etc/letsencrypt and
+  # fails to start without it). voice-ingress below is disabled WITH it —
+  # voice-ingress has depends_on: livekit, and compose hard-fails on a
+  # depends_on referencing an undefined service. Re-enable BOTH together.
+  # livekit:
+  #   image: livekit/livekit-server:latest
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./livekit.yaml:/etc/livekit.yaml:ro
+  #     - /etc/letsencrypt:/etc/letsencrypt:ro
+  #   command: --config /etc/livekit.yaml
+  #   networks:
+  #     - internal
+  #   ports:
+  #     - "127.0.0.1:7880:7880"
+  #     - "7881:7881/tcp"
+  #     - "50000-50020:50000-50020/udp"
+  #     - "3478:3478/udp"
+  #     - "5349:5349/tcp"
 
   # --- Application Services ---
   # `delta` is the first service using the company-server image, so it carries
@@ -77,24 +78,25 @@ services:
     ports:
       - "127.0.0.1:14702:14702"
 
-  voice-ingress:
-    image: company-server:latest
-    build:
-      context: .
-      network: host
-      args:
-        TARGETARCH: amd64
-    restart: unless-stopped
-    entrypoint: ["/home/rust/src/target/release/company-voice-ingress"]
-    volumes:
-      - ./Revolt.toml:/home/rust/src/Revolt.toml:ro
-    networks:
-      - internal
-    depends_on:
-      - delta                                      # startup ordering only — depends_on does NOT order builds
-      - rabbitmq
-      - redis
-      - livekit
+  # PRE-CERTBOT: disabled together with livekit above — re-enable BOTH together.
+  # voice-ingress:
+  #   image: company-server:latest
+  #   build:
+  #     context: .
+  #     network: host
+  #     args:
+  #       TARGETARCH: amd64
+  #   restart: unless-stopped
+  #   entrypoint: ["/home/rust/src/target/release/company-voice-ingress"]
+  #   volumes:
+  #     - ./Revolt.toml:/home/rust/src/Revolt.toml:ro
+  #   networks:
+  #     - internal
+  #   depends_on:
+  #     - delta                                      # startup ordering only — depends_on does NOT order builds
+  #     - rabbitmq
+  #     - redis
+  #     - livekit
 
   bonfire:
     image: company-server:latest
