@@ -34,6 +34,10 @@ services:
   # fails to start without it). voice-ingress below is disabled WITH it —
   # voice-ingress has depends_on: livekit, and compose hard-fails on a
   # depends_on referencing an undefined service. Re-enable BOTH together.
+  # ALSO when re-enabling: the mount below says ./livekit.yaml but the file in
+  # this repo is livekit.yml — rename the file or fix the mount, or Docker will
+  # create an empty DIRECTORY named livekit.yaml on the server and the container
+  # won't start.
   # livekit:
   #   image: livekit/livekit-server:latest
   #   restart: unless-stopped
