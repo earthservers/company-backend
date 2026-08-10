@@ -1,13 +1,17 @@
+# Template for livekit.yaml (the real file is untracked — it holds the API
+# secret). Copy to /home/company/app/livekit.yaml on the server and fill in.
 port: 7880
 redis:
-    address: localhost:6379
-    username: ""
-    password: ""
+  # compose service name — NOT localhost (that's the container itself)
+  address: redis:6379
 webhook:
   api_key: worldwide
   urls:
-    - 'http://localhost:8500/worldwide'
+    # voice-ingress on the internal docker network (port 8500, unpublished)
+    - 'http://voice-ingress:8500/worldwide'
 logging:
-  level: debug
+  level: info
 keys:
-  worldwide: ZjCofRlfm6GGtjlifmNpCDkcQbEIIVC0
+  # Generate: openssl rand -base64 24
+  # MUST match [api.livekit.nodes.worldwide].secret in Revolt.toml.
+  worldwide: CHANGE_ME

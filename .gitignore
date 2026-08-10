@@ -20,3 +20,7 @@ keys/
 *.swp
 .idea/
 .vscode/
+
+# LiveKit runtime config holds the API secret — server-side only (template: livekit.example.yml)
+/livekit.yaml
+/livekit.yml

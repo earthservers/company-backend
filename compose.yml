@@ -29,30 +29,24 @@ services:
     networks:
       - internal
 
-  # PRE-CERTBOT: livekit disabled until certbot has issued the cert for
-  # local.company.earthservers.net (it mounts the host's /etc/letsencrypt and
-  # fails to start without it). voice-ingress below is disabled WITH it —
-  # voice-ingress has depends_on: livekit, and compose hard-fails on a
-  # depends_on referencing an undefined service. Re-enable BOTH together.
-  # ALSO when re-enabling: the mount below says ./livekit.yaml but the file in
-  # this repo is livekit.yml — rename the file or fix the mount, or Docker will
-  # create an empty DIRECTORY named livekit.yaml on the server and the container
-  # won't start.
-  # livekit:
-  #   image: livekit/livekit-server:latest
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./livekit.yaml:/etc/livekit.yaml:ro
-  #     - /etc/letsencrypt:/etc/letsencrypt:ro
-  #   command: --config /etc/livekit.yaml
-  #   networks:
-  #     - internal
-  #   ports:
-  #     - "127.0.0.1:7880:7880"
-  #     - "7881:7881/tcp"
-  #     - "50000-50020:50000-50020/udp"
-  #     - "3478:3478/udp"
-  #     - "5349:5349/tcp"
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    volumes:
+      # livekit.yaml is UNTRACKED (holds the API secret) — author it on the
+      # server from livekit.example.yml before `up`; a missing file makes
+      # Docker create a directory here and the container fails confusingly.
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    command: --config /etc/livekit.yaml
+    networks:
+      - internal
+    ports:
+      - "127.0.0.1:7880:7880"
+      - "7881:7881/tcp"
+      - "50000-50020:50000-50020/udp"
+      - "3478:3478/udp"
+      - "5349:5349/tcp"
 
   # --- Application Services ---
   # `delta` is the first service using the company-server image, so it carries
@@ -82,25 +76,24 @@ services:
     ports:
       - "127.0.0.1:14702:14702"
 
-  # PRE-CERTBOT: disabled together with livekit above — re-enable BOTH together.
-  # voice-ingress:
-  #   image: company-server:latest
-  #   build:
-  #     context: .
-  #     network: host
-  #     args:
-  #       TARGETARCH: amd64
-  #   restart: unless-stopped
-  #   entrypoint: ["/home/rust/src/target/release/company-voice-ingress"]
-  #   volumes:
-  #     - ./Revolt.toml:/home/rust/src/Revolt.toml:ro
-  #   networks:
-  #     - internal
-  #   depends_on:
-  #     - delta                                      # startup ordering only — depends_on does NOT order builds
-  #     - rabbitmq
-  #     - redis
-  #     - livekit
+  voice-ingress:
+    image: company-server:latest
+    build:
+      context: .
+      network: host
+      args:
+        TARGETARCH: amd64
+    restart: unless-stopped
+    entrypoint: ["/home/rust/src/target/release/company-voice-ingress"]
+    volumes:
+      - ./Revolt.toml:/home/rust/src/Revolt.toml:ro
+    networks:
+      - internal
+    depends_on:
+      - delta                                      # startup ordering only — depends_on does NOT order builds
+      - rabbitmq
+      - redis
+      - livekit
 
   bonfire:
     image: company-server:latest
