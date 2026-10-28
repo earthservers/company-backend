@@ -1,11 +1,15 @@
 //! `GET /oauth/link-minecraft` — first leg of the link flow.
 //!
-//! Validates the inbound OAuth-style query, then either:
-//!   * not signed in → 302 to the SPA's `/sign-in` page with `?next=` set
-//!     so the user lands back here after auth;
-//!   * signed in    → 302 to the SPA's `/link-minecraft` consent route,
-//!     forwarding the same params; the SPA renders the consent UI and
-//!     POSTs to `/oauth/link-minecraft/confirm` on accept.
+//! Validates the inbound OAuth-style query, then 302s to the SPA's
+//! `/link-minecraft` consent route, forwarding the same params. The SPA
+//! renders the consent UI and POSTs to `/oauth/link-minecraft/confirm` on
+//! accept. Signed in or not, the target is the same: the consent page keeps
+//! its own auth gate (it remembers itself as `nextPath` and sends the user
+//! through `/login`, which comes back to it). The SPA has no `/sign-in`
+//! route and its login page reads no `?next=`, so the earlier redirect there
+//! stranded signed-out users on the app's home. The session here is read
+//! from the `company_session` cookie, which the app only sets through
+//! `/auth/external-token`; the consent page calls that before it confirms.
 //!
 //! Why a redirect to the SPA instead of returning HTML inline: the consent
 //! page's UI lives with the rest of the user-facing app, sharing layout,
@@ -44,6 +48,8 @@ pub async fn link_minecraft_begin(
     mojang_uuid: &str,
     session: MaybeSession,
 ) -> Result<Redirect, (Status, String)> {
+    // The session is only used for the log line: the consent page gates auth itself.
+    let signed_in = session.0.is_some();
     if let Err(e) = validate_all(redirect_uri, state, mojang_uuid) {
         // Bail with 400 instead of redirecting — a redirect would still
         // expose the bad input to the SPA, which would just re-fail.
@@ -57,24 +63,14 @@ pub async fn link_minecraft_begin(
     // Trim trailing slash so concatenation produces canonical paths.
     let app_host = app_host.trim_end_matches('/');
 
-    if session.0.is_none() {
-        // Build the "come back here after sign-in" target. Re-encoding the
-        // full original URL keeps redirect_uri/state/mojang_uuid intact.
-        let next_path = format!(
-            "/oauth/link-minecraft?redirect_uri={}&state={}&mojang_uuid={}",
-            urlencode(redirect_uri),
-            urlencode(state),
-            urlencode(mojang_uuid),
-        );
-        // Sign-in lives on the SPA; once auth completes, the SPA redirects
-        // to `next` which round-trips back here with the cookie set.
-        let target = format!("{}/sign-in?next={}", app_host, urlencode(&next_path));
-        return Ok(Redirect::to(target));
-    }
-
-    // Signed in — hand off to the SPA's consent route.
+    // Hand off to the SPA's consent route, signed in or not.
     // (LinkMinecraftPage in for-web/packages/client/src/interface/, mounted
     // at `/link-minecraft` in client/src/index.tsx.)
+    log::info!(
+        "link-minecraft begin for mojang {} (cookie session: {})",
+        mojang_uuid,
+        signed_in
+    );
     let target = format!(
         "{}/link-minecraft?redirect_uri={}&state={}&mojang_uuid={}",
         app_host,
