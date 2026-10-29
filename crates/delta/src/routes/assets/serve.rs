@@ -24,6 +24,11 @@ impl<'r> Responder<'r, 'static> for AssetResponse {
                 "Cache-Control",
                 "public, max-age=604800, immutable",
             ))
+            // The CORS headers only come with an Origin header (the cors fairing), and the
+            // response is cached for a week: without Vary the browser reused a copy it fetched
+            // for a plain <img> (no Origin, no CORS headers) to answer a later fetch() from the
+            // app, which then failed as a CORS error. Keyed by Origin, the two don't collide.
+            .header(Header::new("Vary", "Origin"))
             .header(Header::new("X-Content-Type-Options", "nosniff"))
             .sized_body(self.data.len(), Cursor::new(self.data))
             .ok()
