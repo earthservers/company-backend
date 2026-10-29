@@ -46,6 +46,10 @@ struct Claims<'a> {
     aud: &'a str,
     exp: u64,
     iat: u64,
+    /// Company staff (`User::privileged`): the cosmetics backend waives the
+    /// submission fee for them. Left out of the token when false.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    privileged: bool,
 }
 
 static ENCODING_KEY: OnceCell<EncodingKey> = OnceCell::new();
@@ -77,6 +81,17 @@ pub fn mint_jwt(
     ttl_secs: u64,
     private_key_path: &str,
 ) -> Result<String, CosmeticsProxyError> {
+    mint_jwt_as(user_id, false, audience, ttl_secs, private_key_path)
+}
+
+/// Like [`mint_jwt`], carrying whether the subject is Company staff.
+pub fn mint_jwt_as(
+    user_id: &str,
+    privileged: bool,
+    audience: &str,
+    ttl_secs: u64,
+    private_key_path: &str,
+) -> Result<String, CosmeticsProxyError> {
     let key = encoding_key(private_key_path)?;
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let claims = Claims {
@@ -84,6 +99,7 @@ pub fn mint_jwt(
         aud: audience,
         exp: now + ttl_secs,
         iat: now,
+        privileged,
     };
     let header = Header::new(Algorithm::RS256);
     encode(&header, &claims, key).map_err(|e| CosmeticsProxyError::SignError(e.to_string()))
@@ -194,8 +210,20 @@ pub async fn proxy_post(
     path: &str,
     body: &JsonValue,
 ) -> Result<JsonValue, CosmeticsProxyError> {
+    proxy_post_as(cfg, user_id, false, path, body).await
+}
+
+/// POST helper whose token says whether the user is Company staff (the
+/// cosmetics backend waives the submission fee for staff).
+pub async fn proxy_post_as(
+    cfg: &ProxyConfig<'_>,
+    user_id: &str,
+    privileged: bool,
+    path: &str,
+    body: &JsonValue,
+) -> Result<JsonValue, CosmeticsProxyError> {
     cfg.validated()?;
-    let jwt = mint_jwt(user_id, cfg.audience, cfg.ttl_secs, cfg.private_key_path)?;
+    let jwt = mint_jwt_as(user_id, privileged, cfg.audience, cfg.ttl_secs, cfg.private_key_path)?;
     let url = format!("{}{}", cfg.backend_url.trim_end_matches('/'), path);
     let resp = http_client()
         .post(&url)

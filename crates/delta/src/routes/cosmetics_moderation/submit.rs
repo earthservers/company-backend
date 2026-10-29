@@ -3,13 +3,14 @@ use company_database::User;
 use company_result::{create_error, Result};
 use rocket::serde::json::{Json, Value};
 
-use crate::util::cosmetics_proxy::{proxy_post, CosmeticsProxyError, ProxyConfig};
+use crate::util::cosmetics_proxy::{proxy_post_as, CosmeticsProxyError, ProxyConfig};
 
 /// # Submit MC Cosmetic for Review
 ///
 /// Forwards a cosmetic submission from Decoration Studio to the
 /// EarthCosmetics backend. Any signed-in user can submit; the cosmetics
-/// backend debits the submission fee and creates the row in Pending status.
+/// backend debits the submission fee (waived for privileged users: the token
+/// says so) and creates the row in Pending status.
 /// Body is the unmodified `AdminPublishRequest` shape — Company API doesn't
 /// inspect or rewrite the descriptor / visibility / bundle here.
 #[openapi(tag = "Cosmetics Moderation")]
@@ -23,7 +24,7 @@ pub async fn submit_cosmetic(user: User, body: Json<Value>) -> Result<Json<Value
         ttl_secs: config.cosmetics.jwt_ttl_secs,
     };
     let body = body.into_inner();
-    match proxy_post(&cfg, &user.id, "/admin/cosmetics", &body).await {
+    match proxy_post_as(&cfg, &user.id, user.privileged, "/admin/cosmetics", &body).await {
         Ok(v) => Ok(Json(v)),
         Err(e) => {
             log::warn!("cosmetics proxy (submit) failed: {:?}", e);
