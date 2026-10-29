@@ -74,6 +74,9 @@ call_ring_duration = 30
 [api.livekit.nodes]
 
 [api.users]
+# The Company Official server every user is a member of (new users at
+# onboarding, existing users on their next app load). Leave empty for none.
+# official_server = "01ABC..."
 
 [pushd]
 # this changes the names of the queues to not overlap 

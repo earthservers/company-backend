@@ -235,6 +235,11 @@ pub struct LiveKitNode {
 #[derive(Deserialize, Debug, Clone)]
 pub struct ApiUsers {
     pub early_adopter_cutoff: Option<u64>,
+    /// The Company Official server's id. Every user is made a member of it:
+    /// new users when they finish onboarding, existing users the next time
+    /// they load the app (`GET /users/@me`). Empty or missing: off.
+    #[serde(default)]
+    pub official_server: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

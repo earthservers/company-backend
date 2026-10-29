@@ -45,10 +45,8 @@ pub async fn complete(
         })
     })?;
 
-    Ok(Json(
-        User::create(db, data.username, session.user_id, None)
-            .await?
-            .into_self(false)
-            .await,
-    ))
+    let user = User::create(db, data.username, session.user_id, None).await?;
+    // Everyone is a member of the Company Official server (api.users.official_server).
+    crate::util::official_server::ensure_official_membership(db, &user).await;
+    Ok(Json(user.into_self(false).await))
 }
