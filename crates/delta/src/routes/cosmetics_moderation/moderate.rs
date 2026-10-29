@@ -15,6 +15,10 @@ pub struct ModerateCosmeticRequest {
     pub action: String,
     /// Optional notes shown to the creator (rejection reason / change list).
     pub notes: Option<String>,
+    /// With approve: also offer the cosmetic to the EarthTales campaign (the
+    /// backend tags it `earthtales`; the campaign server syncs tagged ones
+    /// into its wardrobe). Omitted: the tag stays as it is.
+    pub earthtales: Option<bool>,
 }
 
 /// # Moderate MC Cosmetic
@@ -51,6 +55,7 @@ pub async fn moderate_cosmetic(
     let body = serde_json::json!({
         "action": data.action,
         "notes": data.notes,
+        "earthtales": data.earthtales,
     });
     let response = match proxy_patch(&cfg, &user.id, &path, &body).await {
         Ok(v) => v,
